@@ -18,7 +18,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Your Name",
     author_email="your.email@example.com",
-    url="https://github.com/yourusername/fast_chat_programmer",
+    url="https://github.com/gogoboyia/worker-agent",
     license="MIT",
     classifiers=[
         "Programming Language :: Python :: 3",

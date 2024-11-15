@@ -6,15 +6,16 @@ import sys
 from huggingface_hub import InferenceClient
 from stdlib_list import stdlib_list
 
-client = InferenceClient()
+client = InferenceClient(timeout=60 * 5)
+
 
 def fast_chat_programmer(messages, temperature=0.2):
     response = client.chat.completions.create(
-        model="Qwen/Qwen2.5-Coder-32B-Instruct", 
+        model="Qwen/Qwen2.5-Coder-32B-Instruct",
         messages=messages,
         temperature=temperature,
         max_tokens=20000,
-        stream=False
+        stream=False,
     )
 
     return response.choices[0].message.content
@@ -65,14 +66,19 @@ REQUIREMENTS_PROMPT = (
 
 class ClarifierAgent:
     """
-    Agent responsible for clarifying the initial prompt according to the provided rules.
+    Agent responsible for clarifying the initial prompt and providing a roadmap for problem resolution.
     """
 
     def __init__(self):
         self.agent_prompt = (
-            "Given some instructions, determine if anything needs to be clarified, do not carry them out. "
+            "Given some instructions for building a Python script, determine if anything needs to be clarified, do not carry them out. "
             "You can make reasonable assumptions, but if you are unsure, ask a single clarification question. "
-            "Otherwise state: \"Nothing to clarify\""
+            'Otherwise state: "Nothing to clarify"'
+        )
+        self.roadmap_prompt = (
+            "Given a problem description, create a step-by-step roadmap to build a Python script and fulfill the initial prompt. "
+            "Include potential technologies, tools, and considerations for each step. "
+            "The roadmap should focus on clarity and practicality."
         )
 
     def clarify(self, instructions):
@@ -92,6 +98,26 @@ class ClarifierAgent:
 
         response = fast_chat_programmer(messages, temperature=0.1)
         return response.strip()
+
+    def generate_roadmap(self, problem_description):
+        """
+        Generates a roadmap to resolve the described problem.
+
+        Args:
+            problem_description (str): The problem description provided by the user.
+
+        Returns:
+            str: A step-by-step roadmap.
+        """
+        messages = [
+            {"role": "system", "content": self.roadmap_prompt},
+            {"role": "user", "content": problem_description},
+        ]
+
+        response = fast_chat_programmer(messages, temperature=0.2)
+        return response.strip()
+
+
 
 
 class CodeGenerator:
@@ -324,8 +350,10 @@ class CodeGenerator:
                 user_prompt = f"{user_prompt} {user_response}"
         else:
             print("Nothing to clarify")
+            
+        roadmap = self.clarifier.generate_roadmap(user_prompt)
 
-        self.prompt = user_prompt
+        self.prompt = f"prompt: {user_prompt}\nroadmap:\n{roadmap}"
         test_prompt = "Write unit tests for the generated code."
 
         # Initialize the list of files
@@ -353,7 +381,7 @@ class CodeGenerator:
 
                 existing_file = next((f for f in files if f["path"] == path), None)
                 if existing_file:
-                    existing_file["content"] = code_content 
+                    existing_file["content"] = code_content
                 else:
                     file = {"path": path, "type": "code", "content": code_content}
                     files.append(file)
