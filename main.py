@@ -14,7 +14,7 @@ if os.path.exists(WORKSPACE_DIR):
 os.makedirs(WORKSPACE_DIR, exist_ok=True)
 
 def main():
-    code_generator = CodeGenerator(WORKSPACE_DIR, MAX_ITERATIONS)
+    code_generator = CodeGenerator(WORKSPACE_DIR, MAX_ITERATIONS, generate_tests=False)
 
     user_prompt = "Open YouTube Music in Chrome and play a funk playlist."
 

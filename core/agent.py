@@ -121,11 +121,12 @@ class ClarifierAgent:
 
 
 class CodeGenerator:
-    def __init__(self, workspace_dir, max_iterations=5, clarifier_agent=None):
+    def __init__(self, workspace_dir, max_iterations=5, clarifier_agent=None, generate_tests=True):
         self.workspace_dir = workspace_dir
         self.env_dir = os.path.join(self.workspace_dir, "env")
         self.max_iterations = max_iterations
         self.prompt = None
+        self.generate_tests = generate_tests
 
         self.create_virtualenv(self.env_dir)
         self.clarifier = clarifier_agent if clarifier_agent else ClarifierAgent()
@@ -386,23 +387,24 @@ class CodeGenerator:
                     file = {"path": path, "type": "code", "content": code_content}
                     files.append(file)
 
-                test_code = self.generate_code(
-                    test_prompt,
-                    role="tester",
-                    files=files,
-                )
-                test_contents = self.extract_code(test_code)
-                if test_contents:
-                    test_content = test_contents[0]
-                    test_path = self.extract_path(test_content)
-                    self.write_to_file(test_path, test_content)
+                if self.generate_tests:
+                    test_code = self.generate_code(
+                        test_prompt,
+                        role="tester",
+                        files=files,
+                    )
+                    test_contents = self.extract_code(test_code)
+                    if test_contents:
+                        test_content = test_contents[0]
+                        test_path = self.extract_path(test_content)
+                        self.write_to_file(test_path, test_content)
 
-                    existing_test_file = next((f for f in files if f["path"] == test_path), None)
-                    if existing_test_file:
-                        existing_test_file["content"] = test_content
-                    else:
-                        test_file = {"path": test_path, "type": "test", "content": test_content}
-                        files.append(test_file)
+                        existing_test_file = next((f for f in files if f["path"] == test_path), None)
+                        if existing_test_file:
+                            existing_test_file["content"] = test_content
+                        else:
+                            test_file = {"path": test_path, "type": "test", "content": test_content}
+                            files.append(test_file)
 
             # Generate requirements.txt based on dependencies
             requirements = self.generate_code(
@@ -434,7 +436,6 @@ class CodeGenerator:
                     self.install_requirements()
 
             error_feedback = ""
-            # Execute tests first
             for file in files:
                 if file["type"] == "test":
                     test_success, test_errors = self.execute_script(file["path"])
