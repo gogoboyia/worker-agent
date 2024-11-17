@@ -25,7 +25,7 @@ def main():
         # Or integrate with another interface to obtain user responses
         print(f"Clarification Question: {question}")
         # For this example, return a fixed response
-        return "Use libraries that can interact with the Chrome browser and play music."
+        return ""
 
     code_generator.run(user_prompt, clarification_handler=my_clarification_handler)
 

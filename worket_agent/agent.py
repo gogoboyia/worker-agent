@@ -78,7 +78,8 @@ class ClarifierAgent:
         self.roadmap_prompt = (
             "Given a problem description, create a step-by-step roadmap to build a Python script and fulfill the initial prompt. "
             "Include potential technologies, tools, and considerations for each step. "
-            "The roadmap should focus on clarity and practicality."
+            "The roadmap should focus on clarity and practicality. "
+            "return only the roadmap and considerations, without any explanations or additional comments. "
         )
 
     def clarify(self, instructions):
