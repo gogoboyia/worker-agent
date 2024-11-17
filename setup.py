@@ -10,7 +10,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "worker-agent=core.main:main",
+            "worker-agent=worker_agent.main:main",
         ],
     },
     description="A package for generating Python code using AI.",

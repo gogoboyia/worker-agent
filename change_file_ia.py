@@ -4,7 +4,7 @@ from huggingface_hub import InferenceClient
 client = InferenceClient(timeout=60*5)
 
 # Read the file content
-file_path = "./core/agent.py"
+file_path = "./worker_agent/agent.py"
 try:
     with open(file_path, "r") as file:
         file_contents = file.read()

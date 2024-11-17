@@ -1,6 +1,6 @@
 import os
 import shutil
-from core.agent import CodeGenerator
+from worket_agent.agent import CodeGenerator
 
 WORKSPACE_DIR = "workspace"
 MAX_ITERATIONS = 15
