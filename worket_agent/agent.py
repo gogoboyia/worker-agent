@@ -337,13 +337,10 @@ class CodeGenerator:
         """
         # First step: clarify the prompt
         clarification = self.clarifier.clarify(user_prompt)
-        print(f"ClarifierAgent response: {clarification}")
 
         if clarification != "Nothing to clarify":
-            print(f"Clarification needed: {clarification}")
             if clarification_handler and callable(clarification_handler):
                 user_response = clarification_handler(clarification)
-                print(f"Received clarification response: {user_response}")
                 user_prompt = f"{user_prompt} {user_response}"
             else:
                 # Fallback to input() if no handler is provided
