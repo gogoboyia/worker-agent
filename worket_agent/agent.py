@@ -82,12 +82,13 @@ class ClarifierAgent:
             "return only the roadmap and considerations, without any explanations or additional comments. "
         )
 
-    def clarify(self, instructions):
+    def clarify(self, instructions, previous_clarifications=None):
         """
         Determines if the instructions need additional clarifications.
 
         Args:
             instructions (str): The instructions provided by the user.
+            previous_clarifications (list of dict, optional): Previous clarification questions and answers.
 
         Returns:
             str: "Nothing to clarify" or a single clarification question.
@@ -96,6 +97,10 @@ class ClarifierAgent:
             {"role": "system", "content": self.agent_prompt},
             {"role": "user", "content": instructions},
         ]
+        if previous_clarifications:
+            for qa in previous_clarifications:
+                messages.append({"role": "assistant", "content": qa['question']})
+                messages.append({"role": "user", "content": qa['answer']})
 
         response = fast_chat_programmer(messages, temperature=0.1)
         return response.strip()
@@ -203,7 +208,6 @@ class CodeGenerator:
         Returns:
             str: The generated code.
         """
-        # Choose the appropriate system prompt based on the role
         if role == "programmer":
             system_prompt = PROGRAMMER_PROMPT
         elif role == "tester":
@@ -211,7 +215,7 @@ class CodeGenerator:
         elif role == "requirements":
             system_prompt = REQUIREMENTS_PROMPT
         else:
-            system_prompt = PROGRAMMER_PROMPT  # Default to programmer prompt
+            system_prompt = PROGRAMMER_PROMPT
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -336,21 +340,25 @@ class CodeGenerator:
                                                         Should have the signature: func(question: str) -> str
                                                         If not provided, uses input() for interactions.
         """
-        # First step: clarify the prompt
-        clarification = self.clarifier.clarify(user_prompt)
-
-        if clarification != "Nothing to clarify":
-            if clarification_handler and callable(clarification_handler):
-                user_response = clarification_handler(clarification)
-                user_prompt = f"{user_prompt} {user_response}"
+        clarification_interview = []
+        for _ in range(10):
+            clarification = self.clarifier.clarify(user_prompt, clarification_interview)
+            if clarification == "Nothing to clarify":
+                break
             else:
-                # Fallback to input() if no handler is provided
-                user_response = input("Please answer the clarification question: ")
-                user_prompt = f"{user_prompt} {user_response}"
+                if clarification_handler and callable(clarification_handler):
+                    clarification_response = clarification_handler(clarification)
+                else:
+                    clarification_response = input(f"Please answer the clarification question: {clarification}\n")
+                clarification_interview.append({'question': clarification, 'answer': clarification_response})
+
+        if clarification_interview:
+            clarifications_text = "\n".join([f"Q: {qa['question']}\nA: {qa['answer']}" for qa in clarification_interview])
+            roadmap_prompt = f"Prompt: {user_prompt}\nClarifications:\n{clarifications_text}"
         else:
-            print("Nothing to clarify")
-            
-        roadmap = self.clarifier.generate_roadmap(user_prompt)
+            roadmap_prompt = f"Prompt: {user_prompt}"
+
+        roadmap = self.clarifier.generate_roadmap(roadmap_prompt)
 
         self.prompt = f"prompt: {user_prompt}\nroadmap:\n{roadmap}"
         test_prompt = "Write unit tests for the generated code."
@@ -361,7 +369,6 @@ class CodeGenerator:
 
         for iteration in range(1, self.max_iterations + 1):
             print(f"\nIteration {iteration}:")
-            # Filter files to include only code and test types
             files = [f for f in files if f["type"] == "code" or f["type"] == "test"]
 
             if error_feedback:
