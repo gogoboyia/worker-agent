@@ -29,15 +29,14 @@ PROGRAMMER_PROMPT = (
     "The scripts should be designed to work on macOS, Windows, and Linux. "
     "You are a Python programmer that writes code to solve specific tasks. "
     "Return only the Python code, without any explanations or additional comments. "
-    "Do not remove the existing comments. "
     "Always generate Python code in English. "
     "Every Python file must start with a comment indicating the path of the file, e.g., '# YOUR_SCRIPT_NAME.py'. "
     "Output must be strictly limited to Python code blocks. "
     "The generated Python code should be structured to facilitate unit testing and allow dependency mocking, do not create tests. "
     "Do not return text outside of code blocks or additional explanations. "
     "For new files, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
+    "Take a printout of content that can be used to correct the script later, especially at points of uncertainty. "
     "The errors from the generated scripts should not be entirely suppressed, allowing them to be captured in stderr for further analysis. "
-    "If you don't find any problems in the script that gave an error in the feedback, try another approach to solve it. "
 )
 
 TESTER_PROMPT = (
@@ -363,7 +362,6 @@ class CodeGenerator:
         self.prompt = f"prompt: {user_prompt}\nroadmap:\n{roadmap}"
         test_prompt = "Write unit tests for the generated code."
 
-        # Initialize the list of files
         files = []
         error_feedback = None
 
@@ -411,7 +409,6 @@ class CodeGenerator:
                             test_file = {"path": test_path, "type": "test", "content": test_content}
                             files.append(test_file)
 
-            # Generate requirements.txt based on dependencies
             requirements = self.generate_code(
                 "Create a requirements.txt file based on the dependencies in the code and test files provided.",
                 role="requirements",
@@ -473,7 +470,7 @@ class CodeGenerator:
                     print(
                         "\nTask completed successfully! The code and tests work correctly."
                     )
-                    return  # Exit if successful
+                    return
 
         print(
             "\nCould not complete the task after several attempts. Consider providing more details or revising your description."
