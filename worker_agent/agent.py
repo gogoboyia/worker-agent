@@ -326,7 +326,7 @@ class CodeGenerator:
         error_feedback = None
 
         for iteration in range(1, self.max_iterations + 1):
-            await handle_verbose(f"\nIteration {iteration}:")
+            await handle_verbose(f"Starting iteration {iteration}...")
             files = [f for f in files if f["type"] == "code" or f["type"] == "test"]
 
             if error_feedback:
@@ -428,10 +428,10 @@ class CodeGenerator:
                             break
                 else:
                     await handle_verbose(
-                        "\nTask completed successfully! The code and tests work correctly."
+                        "Task completed successfully! The code and tests work correctly."
                     )
                     return
 
         await handle_verbose(
-            "\nCould not complete the task after several attempts. Consider providing more details or revising your description."
+            "Could not complete the task after several attempts. Consider providing more details or revising your description."
         )
