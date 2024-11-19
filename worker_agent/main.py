@@ -1,6 +1,6 @@
 import os
-from worket_agent.agent import CodeGenerator
-from worket_agent.agent import ClarifierAgent
+from worker_agent.agent import CodeGenerator
+from worker_agent.agent import ClarifierAgent
 
 def main():
     workspace = os.path.join(os.getcwd(), "workspace")

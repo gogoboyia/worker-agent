@@ -6,7 +6,7 @@ import asyncio
 from huggingface_hub import InferenceClient
 from stdlib_list import stdlib_list
 
-from worket_agent.prompt_rules import AGENT_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
+from worker_agent.prompt_rules import AGENT_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 
 client = InferenceClient(timeout=60 * 5)
 
