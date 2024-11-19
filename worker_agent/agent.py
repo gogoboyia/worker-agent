@@ -184,7 +184,6 @@ class CodeGenerator:
 
         Args:
             filepath (str): The path to the file.
-            content (str): The content to write.
         """
         if filepath is None:
             raise ValueError("No file path specified in code content.")
@@ -271,7 +270,7 @@ class CodeGenerator:
                 print(
                     f"Errors during execution of {os.path.basename(filepath)}:\n{result.stderr}"
                 )
-            return result.returncode == 0, f"Result:\n{result.stdout}\nErros:\n{result.stderr}"
+            return result.returncode == 0, f"Result:\n{result.stdout}\nErrors:\n{result.stderr}"
         except Exception as e:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
@@ -285,10 +284,18 @@ class CodeGenerator:
             clarification_handler (callable, optional): A callback function that receives a clarification question and returns the answer.
                                                         Should have the signature: func(question: str) -> str
                                                         If not provided, uses input() for interactions.
+            verbose_handler (callable, optional): A callback function for verbose output.
+                                                  Can be synchronous or asynchronous.
         """
         if verbose_handler is None:
             verbose_handler = lambda s: print(s)
-            
+
+        async def handle_verbose(message):
+            if asyncio.iscoroutinefunction(verbose_handler):
+                await verbose_handler(message)
+            else:
+                verbose_handler(message)
+
         clarification_interview = []
         for _ in range(max_clarifications):
             clarification = self.clarifier.clarify(user_prompt, clarification_interview)
@@ -319,7 +326,7 @@ class CodeGenerator:
         error_feedback = None
 
         for iteration in range(1, self.max_iterations + 1):
-            verbose_handler(f"\nIteration {iteration}:")
+            await handle_verbose(f"\nIteration {iteration}:")
             files = [f for f in files if f["type"] == "code" or f["type"] == "test"]
 
             if error_feedback:
@@ -398,7 +405,7 @@ class CodeGenerator:
                         error_feedback += (
                             f"Test errors in {file['path']}:\n{run_info}\n"
                         )
-                        verbose_handler(
+                        await handle_verbose(
                             "Tests failed. The model will try to adjust the code based on the feedback."
                         )
                         print(error_feedback)
@@ -414,17 +421,17 @@ class CodeGenerator:
                             error_feedback += (
                                 f"Script errors in {file['path']}:\n{run_info}\n"
                             )
-                            verbose_handler(
+                            await handle_verbose(
                                 "Script execution failed. The model will try to adjust the code based on the feedback."
                             )
                             print(error_feedback)
                             break
                 else:
-                    verbose_handler(
+                    await handle_verbose(
                         "\nTask completed successfully! The code and tests work correctly."
                     )
                     return
 
-        verbose_handler(
+        await handle_verbose(
             "\nCould not complete the task after several attempts. Consider providing more details or revising your description."
         )

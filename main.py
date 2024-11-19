@@ -1,7 +1,7 @@
 import asyncio
 import os
 import shutil
-from worket_agent.agent import CodeGenerator
+from worker_agent.agent import CodeGenerator
 
 WORKSPACE_DIR = "workspace"
 MAX_ITERATIONS = 15
