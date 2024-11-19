@@ -276,7 +276,7 @@ class CodeGenerator:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
 
-    def run(self, user_prompt, max_clarifications=10, clarification_handler=None):
+    def run(self, user_prompt, max_clarifications=10, clarification_handler=None, verbose_handler=None):
         """
         Executes the code generation process based on the user's prompt.
 
@@ -286,6 +286,10 @@ class CodeGenerator:
                                                         Should have the signature: func(question: str) -> str
                                                         If not provided, uses input() for interactions.
         """
+        
+        if(verbose_handler == None):
+            verbose_handler = lambda str: print(str)
+            
         clarification_interview = []
         for _ in range(max_clarifications):
             clarification = self.clarifier.clarify(user_prompt, clarification_interview)
@@ -313,7 +317,7 @@ class CodeGenerator:
         error_feedback = None
 
         for iteration in range(1, self.max_iterations + 1):
-            print(f"\nIteration {iteration}:")
+            verbose_handler(f"\nIteration {iteration}:")
             files = [f for f in files if f["type"] == "code" or f["type"] == "test"]
 
             if error_feedback:
@@ -392,7 +396,7 @@ class CodeGenerator:
                         error_feedback += (
                             f"Test errors in {file['path']}:\n{test_errors}\n"
                         )
-                        print(
+                        verbose_handler(
                             "Tests failed. The model will try to adjust the code based on the feedback."
                         )
                         print(error_feedback)
@@ -408,17 +412,17 @@ class CodeGenerator:
                             error_feedback += (
                                 f"Script errors in {file['path']}:\n{script_errors}\n"
                             )
-                            print(
+                            verbose_handler(
                                 "Script execution failed. The model will try to adjust the code based on the feedback."
                             )
                             print(error_feedback)
                             break
                 else:
-                    print(
+                    verbose_handler(
                         "\nTask completed successfully! The code and tests work correctly."
                     )
                     return
 
-        print(
+        verbose_handler(
             "\nCould not complete the task after several attempts. Consider providing more details or revising your description."
         )
