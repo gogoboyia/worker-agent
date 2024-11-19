@@ -8,7 +8,6 @@ PROGRAMMER_PROMPT = (
     "The generated Python code should be structured to facilitate unit testing and allow dependency mocking, do not create tests. "
     "Do not return text outside of code blocks or additional explanations. "
     "For new files, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
-    "Take a printout of content that can be used to correct the script later, especially at points of uncertainty. "
     "The errors from the generated scripts should not be entirely suppressed, allowing them to be captured in stderr for further analysis. "
 )
 
@@ -39,6 +38,8 @@ REQUIREMENTS_PROMPT = (
 AGENT_PROMPT = (
     "Given some instructions for building a Python script, determine if anything needs to be clarified, do not carry them out. "
     "You can make reasonable assumptions, but if you are unsure, ask a single clarification question. "
+    "respond in the same language as the prompt was made. "
+    "ask short questions. "
     'Otherwise state: "Nothing to clarify"'
 )
 ROADMAP_PROMPT = (
