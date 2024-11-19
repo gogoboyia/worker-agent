@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shutil
 from worket_agent.agent import CodeGenerator
@@ -19,15 +20,15 @@ def main():
     user_prompt = "Open YouTube Music in Chrome and play a funk playlist."
 
     # Define a handler for clarification responses, if desired
-    def my_clarification_handler(question):
+    async def my_clarification_handler(question):
         # Implement logic to respond to clarification questions
         # For example, map known questions to predefined answers
         # Or integrate with another interface to obtain user responses
         print(f"Clarification Question: {question}")
         # For this example, return a fixed response
-        return ""
+        return "make reasonable assumption."
 
-    code_generator.run(user_prompt, clarification_handler=my_clarification_handler)
+    asyncio.run(code_generator.run(user_prompt, clarification_handler=my_clarification_handler))
 
 
 if __name__ == "__main__":

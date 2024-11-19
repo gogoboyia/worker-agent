@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 import sys
-
+import asyncio
 from huggingface_hub import InferenceClient
 from stdlib_list import stdlib_list
 
@@ -276,7 +276,7 @@ class CodeGenerator:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
 
-    def run(self, user_prompt, max_clarifications=10, clarification_handler=None, verbose_handler=None):
+    async def run(self, user_prompt, max_clarifications=10, clarification_handler=None, verbose_handler=None):
         """
         Executes the code generation process based on the user's prompt.
 
@@ -286,9 +286,8 @@ class CodeGenerator:
                                                         Should have the signature: func(question: str) -> str
                                                         If not provided, uses input() for interactions.
         """
-        
-        if(verbose_handler == None):
-            verbose_handler = lambda str: print(str)
+        if verbose_handler is None:
+            verbose_handler = lambda s: print(s)
             
         clarification_interview = []
         for _ in range(max_clarifications):
@@ -297,7 +296,10 @@ class CodeGenerator:
                 break
             else:
                 if clarification_handler and callable(clarification_handler):
-                    clarification_response = clarification_handler(clarification)
+                    if asyncio.iscoroutinefunction(clarification_handler):
+                        clarification_response = await clarification_handler(clarification)
+                    else:
+                        clarification_response = clarification_handler(clarification)
                 else:
                     clarification_response = input(f"Please answer the clarification question: {clarification}\n")
                 clarification_interview.append({'question': clarification, 'answer': clarification_response})
