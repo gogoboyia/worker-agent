@@ -276,7 +276,7 @@ class CodeGenerator:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
 
-    def run(self, user_prompt, clarification_handler=None):
+    def run(self, user_prompt, max_clarifications=10, clarification_handler=None):
         """
         Executes the code generation process based on the user's prompt.
 
@@ -287,7 +287,7 @@ class CodeGenerator:
                                                         If not provided, uses input() for interactions.
         """
         clarification_interview = []
-        for _ in range(10):
+        for _ in range(max_clarifications):
             clarification = self.clarifier.clarify(user_prompt, clarification_interview)
             if clarification == "Nothing to clarify":
                 break
