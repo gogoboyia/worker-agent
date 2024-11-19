@@ -271,7 +271,7 @@ class CodeGenerator:
                 print(
                     f"Errors during execution of {os.path.basename(filepath)}:\n{result.stderr}"
                 )
-            return len(result.stderr) == 0, result.stderr
+            return result.returncode == 0, f"Result:\n{result.stdout}\nErros:\n{result.stderr}"
         except Exception as e:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
@@ -391,10 +391,10 @@ class CodeGenerator:
             error_feedback = ""
             for file in files:
                 if file["type"] == "test":
-                    test_success, test_errors = self.execute_script(file["path"])
+                    test_success, run_info = self.execute_script(file["path"])
                     if not test_success:
                         error_feedback += (
-                            f"Test errors in {file['path']}:\n{test_errors}\n"
+                            f"Test errors in {file['path']}:\n{run_info}\n"
                         )
                         verbose_handler(
                             "Tests failed. The model will try to adjust the code based on the feedback."
@@ -405,12 +405,12 @@ class CodeGenerator:
                 # If all tests pass, execute code files
                 for file in files:
                     if file["type"] == "code":
-                        script_success, script_errors = self.execute_script(
+                        script_success, run_info = self.execute_script(
                             file["path"]
                         )
                         if not script_success:
                             error_feedback += (
-                                f"Script errors in {file['path']}:\n{script_errors}\n"
+                                f"Script errors in {file['path']}:\n{run_info}\n"
                             )
                             verbose_handler(
                                 "Script execution failed. The model will try to adjust the code based on the feedback."
