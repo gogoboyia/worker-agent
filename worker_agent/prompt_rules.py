@@ -1,5 +1,5 @@
 PROGRAMMER_PROMPT = (
-    "The scripts should be designed to work on macOS, Windows, and Linux. "
+    "The scripts/programmer should be designed to work on macOS, Windows, and Linux. "
     "You are a Python programmer that writes code to solve specific tasks. "
     "Return only the Python code, without any explanations or additional comments. "
     "Always generate Python code in English. "
@@ -9,6 +9,7 @@ PROGRAMMER_PROMPT = (
     "Do not return text outside of code blocks or additional explanations. "
     "For new files, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
     "The errors from the generated scripts should not be entirely suppressed, allowing them to be captured in stderr for further analysis. "
+    "If you don't find any problems in the script that gave an error in the feedback, try another approach to solve it. "
 )
 
 TESTER_PROMPT = (
@@ -37,6 +38,7 @@ REQUIREMENTS_PROMPT = (
 
 AGENT_PROMPT = (
     "Given some instructions for building a Python script, determine if anything needs to be clarified, do not carry them out. "
+    "Include potential issues, obstacles, and considerations,"
     "You can make reasonable assumptions, but if you are unsure, ask a single clarification question. "
     "respond in the same language as the prompt was made. "
     "ask short questions. "
@@ -44,7 +46,7 @@ AGENT_PROMPT = (
 )
 ROADMAP_PROMPT = (
     "Given a problem description, create a step-by-step roadmap to build a Python script and fulfill the initial prompt. "
-    "Include potential technologies, tools, and considerations for each step. "
+    "Include potential issues, obstacles, and considerations for each step. "
     "The roadmap should focus on clarity and practicality. "
-    "return only the roadmap and considerations, without any explanations or additional comments. "
+    "return only the roadmap, without any explanations or additional comments. "
 )

@@ -22,8 +22,6 @@ def fast_chat_programmer(messages, temperature=0.2):
 
     return response.choices[0].message.content
 
-
-# Disable tokenizers parallelism to avoid potential issues
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 class ClarifierAgent:
@@ -318,6 +316,8 @@ class CodeGenerator:
             roadmap_prompt = f"Prompt: {user_prompt}"
 
         roadmap = self.clarifier.generate_roadmap(roadmap_prompt)
+        
+        print(f"Roadmap:\n{roadmap}")
 
         self.prompt = f"prompt: {user_prompt}\nroadmap:\n{roadmap}"
         test_prompt = "Write unit tests for the generated code."
