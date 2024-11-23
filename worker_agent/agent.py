@@ -6,7 +6,7 @@ import asyncio
 from huggingface_hub import InferenceClient
 from stdlib_list import stdlib_list
 
-from worker_agent.prompt_rules import AGENT_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
+from worker_agent.prompt_rules import CLARIFY_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 
 client = InferenceClient(timeout=60 * 5)
 
@@ -41,7 +41,7 @@ class ClarifierAgent:
             str: "Nothing to clarify" or a single clarification question.
         """
         messages = [
-            {"role": "system", "content": AGENT_PROMPT},
+            {"role": "system", "content": CLARIFY_PROMPT},
             {"role": "user", "content": instructions},
         ]
         if previous_clarifications:

@@ -36,7 +36,7 @@ REQUIREMENTS_PROMPT = (
 )
 
 
-AGENT_PROMPT = (
+CLARIFY_PROMPT = (
     "Given some instructions for building a Python script, determine if anything needs to be clarified, do not carry them out. "
     "Include potential issues, obstacles, and considerations,"
     "You can make reasonable assumptions, but if you are unsure, ask a single clarification question. "
