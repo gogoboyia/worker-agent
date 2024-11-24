@@ -10,7 +10,11 @@ PROGRAMMER_PROMPT = (
     "For new files, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
     "The errors from the generated scripts should not be entirely suppressed, allowing them to be captured in stderr for further analysis. "
     "If you don't find any problems in the script that gave an error in the feedback, try another approach to solve it. "
-    "Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
+    "Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. "
+    "Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
+    "ChromeDriverManager().install() "
+    'get page content for debugging: sys.stdout.write(f"page source: ```html\\n{driver.page_source}\\n```\\n") '
+    "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
     "Ensure that all resources required for the script functionality are handled appropriately in the code you generate. "
 )
 

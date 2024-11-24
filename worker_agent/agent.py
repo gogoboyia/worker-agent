@@ -106,20 +106,42 @@ class CodeGenerator:
 
     def extract_code(self, text):
         """
-        Extracts code blocks from the provided text.
+        Extracts code blocks from the provided text, along with their language types and file extensions.
 
         Args:
             text (str): The text containing the code.
 
         Returns:
-            list: A list of extracted code blocks.
+            list: A list of dictionaries with 'code', 'type', and 'extension' keys.
         """
-        code_blocks = re.findall(r"```(?:python)?\n(.*?)```", text, re.DOTALL)
-        code_blocks = [block for block in code_blocks if block.strip()]
-        if code_blocks:
-            return code_blocks
-        else:
-            return [text]
+        LANGUAGE_EXTENSION_MAP = {
+            'python': 'py',
+            'html': 'html',
+            'javascript': 'js',
+            'js': 'js',
+            'php': 'php',
+            'java': 'java',
+            'c++': 'cpp',
+            'cpp': 'cpp',
+            'c#': 'cs',
+            'cs': 'cs',
+            'bash': 'sh',
+            'shell': 'sh',
+            'go': 'go',
+            'ruby': 'rb',
+            'perl': 'pl',
+            'rust': 'rs',
+        }
+
+        code_blocks = re.findall(r"```([^\n]*)\n(.*?)```", text, re.DOTALL)
+        result = []
+        for lang, code in code_blocks:
+            if code.strip():
+                lang = lang.strip()
+                extension = LANGUAGE_EXTENSION_MAP.get(lang.lower(), lang)
+                result.append({'type': lang, 'extension': extension, 'code': code})
+        
+        return result
 
     def extract_path(self, file_content):
         """
@@ -268,7 +290,7 @@ class CodeGenerator:
                 print(
                     f"Errors during execution of {os.path.basename(filepath)}:\n{result.stderr}"
                 )
-            return result.returncode == 0, f"Result:\n{result.stdout}\nErrors:\n{result.stderr}"
+            return len(result.stderr) == 0, f"Result:\n{result.stdout}\nErrors:\n{result.stderr}"
         except Exception as e:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
