@@ -468,19 +468,19 @@ class CodeGenerator:
                             file["path"]
                         )
                         if not script_success:
-                            code_objects = self.extract_code(run_info)
-                            if code_objects:
-                                code_objects = [code_objects[-1]]
-                            code_blocks = "\n".join(
-                                #f"```{obj['type']}\n{clean_html_with_bs(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
-                                f"```xpath map\n{json.dumps(generate_xpath_list(obj['content'])) if obj['type'] == 'html' else obj['content']}\n```"
-                                for obj in code_objects
-                            )
                             cleaned_text = re.sub(r"```html.*?```", "", run_info, flags=re.DOTALL)
                             error_feedback += (
                                 f"Script errors in {file['path']}:\n{cleaned_text}\n"
                             )
-                            error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
+                            
+                            code_objects = self.extract_code(run_info)
+                            if code_objects:
+                                code_objects = [code_objects[-1]]
+                                code_blocks = "\n".join(
+                                    f"```xpath map\n{generate_xpath(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
+                                    for obj in code_objects
+                                )
+                                error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
                             await handle_verbose(
                                 "Script execution failed. The model will try to adjust the code based on the feedback."
                             )
@@ -532,7 +532,7 @@ def clean_html_with_bs(content):
     return str(soup)
 
 
-def generate_xpath_list(html_content):
+def generate_xpath(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
     xpath_list = []
 
@@ -563,4 +563,4 @@ def generate_xpath_list(html_content):
         }
         xpath_list.append(details)
 
-    return xpath_list
+    return json.dumps(xpath_list)
