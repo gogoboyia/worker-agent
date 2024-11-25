@@ -476,11 +476,11 @@ class CodeGenerator:
                             code_objects = self.extract_code(run_info)
                             if code_objects:
                                 code_objects = [code_objects[-1]]
-                                code_blocks = "\n".join(
-                                    f"```xpath map\n{generate_xpath(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
-                                    for obj in code_objects
-                                )
-                                error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
+                            code_blocks = "\n".join(
+                                    f"```xpath map\n{generate_xpath_map(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
+                                for obj in code_objects
+                            )
+                            error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
                             await handle_verbose(
                                 "Script execution failed. The model will try to adjust the code based on the feedback."
                             )
@@ -532,9 +532,9 @@ def clean_html_with_bs(content):
     return str(soup)
 
 
-def generate_xpath(html_content):
+def generate_xpath_map(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
-    xpath_list = []
+    xpath_map = {}
 
     def get_xpath(element):
         components = []
@@ -557,10 +557,9 @@ def generate_xpath(html_content):
         xpath = get_xpath(element)
         attributes = {key: value for key, value in element.attrs.items() if key in ["placeholder", "id", "href"]}
         details = {
-            "xpath": xpath,
             "attributes": attributes,
             "text": element.get_text(strip=True),
         }
-        xpath_list.append(details)
+        xpath_map[xpath] = details
 
-    return json.dumps(xpath_list)
+    return json.dumps(xpath_map)
