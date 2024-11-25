@@ -469,6 +469,8 @@ class CodeGenerator:
                         )
                         if not script_success:
                             code_objects = self.extract_code(run_info)
+                            if code_objects:
+                                code_objects = [code_objects[-1]]
                             code_blocks = "\n".join(
                                 #f"```{obj['type']}\n{clean_html_with_bs(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
                                 f"```xpath map\n{json.dumps(generate_xpath_map(obj['content'])) if obj['type'] == 'html' else obj['content']}\n```"
@@ -553,7 +555,7 @@ def generate_xpath_map(html_content):
     for element in interactive_elements:
         xpath = get_xpath(element)
         element_type = element.name
-        attributes = {key: value for key, value in element.attrs.items() if key in ["placeholder", "id"]}
+        attributes = {key: value for key, value in element.attrs.items() if key in ["placeholder", "id", "href"]}
         details = {
             "xpath": xpath,
             "type": element_type,
