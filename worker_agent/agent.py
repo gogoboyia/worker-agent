@@ -473,7 +473,7 @@ class CodeGenerator:
                                 code_objects = [code_objects[-1]]
                             code_blocks = "\n".join(
                                 #f"```{obj['type']}\n{clean_html_with_bs(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
-                                f"```xpath map\n{json.dumps(generate_xpath_map(obj['content'])) if obj['type'] == 'html' else obj['content']}\n```"
+                                f"```xpath map\n{json.dumps(generate_xpath_list(obj['content'])) if obj['type'] == 'html' else obj['content']}\n```"
                                 for obj in code_objects
                             )
                             cleaned_text = re.sub(r"```html.*?```", "", run_info, flags=re.DOTALL)
@@ -532,9 +532,9 @@ def clean_html_with_bs(content):
     return str(soup)
 
 
-def generate_xpath_map(html_content):
+def generate_xpath_list(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
-    xpath_map = {}
+    xpath_list = []
 
     def get_xpath(element):
         components = []
@@ -548,20 +548,19 @@ def generate_xpath_map(html_content):
                     components.append(parent.name)
         components.reverse()
         components.append(element.name)
-        return "/" + "/".join(components)
+        xpath = "/" + "/".join(components)
+        return xpath.replace("[document]/", "", 1)
 
     interactive_elements = soup.find_all(["a", "button", "input", "textarea", "select"])
 
     for element in interactive_elements:
         xpath = get_xpath(element)
-        element_type = element.name
         attributes = {key: value for key, value in element.attrs.items() if key in ["placeholder", "id", "href"]}
         details = {
             "xpath": xpath,
-            "type": element_type,
             "attributes": attributes,
             "text": element.get_text(strip=True),
         }
-        xpath_map[xpath] = details
+        xpath_list.append(details)
 
-    return xpath_map
+    return xpath_list
