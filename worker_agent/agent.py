@@ -534,14 +534,12 @@ def generate_xpath_map(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
     xpath_map = {}
 
-    # Função para calcular o XPath de um elemento
     def get_xpath(element):
         components = []
         for parent in element.parents:
             if parent.name:
                 siblings = parent.find_all(element.name, recursive=False)
                 if len(siblings) > 1:
-                    # Adiciona índice se houver irmãos com o mesmo nome
                     index = siblings.index(element) + 1
                     components.append(f"{parent.name}[{index}]")
                 else:
@@ -550,17 +548,16 @@ def generate_xpath_map(html_content):
         components.append(element.name)
         return "/" + "/".join(components)
 
-    # Encontrar elementos interativos
     interactive_elements = soup.find_all(["a", "button", "input", "textarea", "select"])
 
-    # Criar o mapa de XPath
     for element in interactive_elements:
         xpath = get_xpath(element)
         element_type = element.name
+        attributes = {key: value for key, value in element.attrs.items() if key in ["placeholder", "id"]}
         details = {
             "xpath": xpath,
             "type": element_type,
-            "attributes": dict(element.attrs),
+            "attributes": attributes,
             "text": element.get_text(strip=True),
         }
         xpath_map[xpath] = details
