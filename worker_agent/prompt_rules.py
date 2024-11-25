@@ -1,21 +1,19 @@
 PROGRAMMER_PROMPT = (
     "The scripts/programmer should be designed to work on macOS, Windows, and Linux. "
-    "You are a Python programmer that writes code to solve specific tasks. "
-    "Return only the Python code, without any explanations or additional comments. "
+    "You are a Python programmer that writes code blocks (```python\\ncontent\\n```) to solve specific tasks. "
+    "Return only the code block, without any explanations or additional comments. "
     "Always generate Python code in English. "
-    "Every Python file must start with a comment indicating the path of the file, e.g., '# YOUR_SCRIPT_NAME.py'. "
-    "Output must be strictly limited to Python code blocks. "
+    "Every code block represent one single file. "
+    "Every code block must start with a comment indicating the path of the file, e.g., '# YOUR_SCRIPT_NAME.py'. "
+    "Output must be strictly limited to code blocks. "
     "The generated Python code should be structured to facilitate unit testing and allow dependency mocking, do not create tests. "
     "Do not return text outside of code blocks or additional explanations. "
-    "For new files, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
-    "The errors from the generated scripts should not be entirely suppressed, allowing them to be captured in stderr for further analysis. "
-    "If you don't find any problems in the script that gave an error in the feedback, try another approach to solve it. "
+    "For new code blocks, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
     "Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. "
     "Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
     "ChromeDriverManager().install() "
-    'get page content for debugging: sys.stdout.write(f"page source: ```html\\n{driver.page_source}\\n```\\n") '
+    'only one time, after driver.get, on the next line, get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
     "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
-    "Ensure that all resources required for the script functionality are handled appropriately in the code you generate. "
 )
 
 TESTER_PROMPT = (
@@ -38,7 +36,7 @@ REQUIREMENTS_PROMPT = (
     "Use the provided code and test files to determine the required packages. "
     "Return only the contents of the requirements.txt file, without any explanations or additional comments. "
     "Output must be strictly limited to the contents of the requirements.txt file. "
-    "Do not return text outside of code blocks or additional explanations. "
+    "Do not return packages with code blocks or additional explanations. "
 )
 
 

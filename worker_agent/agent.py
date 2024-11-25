@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import subprocess
@@ -5,6 +6,7 @@ import sys
 import asyncio
 from huggingface_hub import InferenceClient
 from stdlib_list import stdlib_list
+from bs4 import BeautifulSoup, Comment
 
 from worker_agent.prompt_rules import CLARIFY_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 
@@ -106,13 +108,14 @@ class CodeGenerator:
 
     def extract_code(self, text):
         """
-        Extracts code blocks from the provided text, along with their language types and file extensions.
+        Extracts the main code blocks from the provided text, along with their language types and file extensions.
+        This method handles nested code blocks by including them as part of the main code block content.
 
         Args:
             text (str): The text containing the code.
 
         Returns:
-            list: A list of dictionaries with 'code', 'type', and 'extension' keys.
+            list: A list of dictionaries with 'content', 'type', and 'extension' keys.
         """
         LANGUAGE_EXTENSION_MAP = {
             'python': 'py',
@@ -133,14 +136,35 @@ class CodeGenerator:
             'rust': 'rs',
         }
 
-        code_blocks = re.findall(r"```([^\n]*)\n(.*?)```", text, re.DOTALL)
         result = []
-        for lang, code in code_blocks:
-            if code.strip():
-                lang = lang.strip()
-                extension = LANGUAGE_EXTENSION_MAP.get(lang.lower(), lang)
-                result.append({'type': lang, 'extension': extension, 'code': code})
-        
+        code_block_started = False
+        code = ''
+        lang = ''
+        lines = text.split('\n')
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if not code_block_started:
+                if line.startswith('```'):
+                    code_block_started = True
+                    lang = line[3:].strip()
+                    if not lang:
+                        lang = None
+                    i += 1
+                    continue
+            else:
+                if line.startswith('```'):
+                    code_block_started = False
+                    extension = LANGUAGE_EXTENSION_MAP.get(lang.lower() if lang else '', lang)
+                    result.append({'content': code.rstrip('\n'), 'type': lang, 'extension': extension})
+                    code = ''
+                    lang = ''
+                    i += 1
+                    continue
+                else:
+                    code += line + '\n'
+            i += 1
+
         return result
 
     def extract_path(self, file_content):
@@ -360,16 +384,16 @@ class CodeGenerator:
                 files=files,
                 error_feedback=error_feedback,
             )
-            code_contents = self.extract_code(code)
-            for code_content in code_contents:
-                path = self.extract_path(code_content)
-                self.write_to_file(path, code_content)
+            code_blocks = self.extract_code(code)
+            for code_block in code_blocks:
+                path = self.extract_path(code_block['content'])
+                self.write_to_file(path, code_block['content'])
 
                 existing_file = next((f for f in files if f["path"] == path), None)
                 if existing_file:
-                    existing_file["content"] = code_content
+                    existing_file["content"] = code_block['content']
                 else:
-                    file = {"path": path, "type": "code", "content": code_content}
+                    file = {"path": path, "type": "code", "content": code_block['content']}
                     files.append(file)
 
                 if self.generate_tests:
@@ -378,9 +402,9 @@ class CodeGenerator:
                         role="tester",
                         files=files,
                     )
-                    test_contents = self.extract_code(test_code)
-                    if test_contents:
-                        test_content = test_contents[0]
+                    test_blocks = self.extract_code(test_code)
+                    if test_blocks:
+                        test_content = test_blocks[0]['content']
                         test_path = self.extract_path(test_content)
                         self.write_to_file(test_path, test_content)
 
@@ -391,42 +415,46 @@ class CodeGenerator:
                             test_file = {"path": test_path, "type": "test", "content": test_content}
                             files.append(test_file)
 
-            requirements = self.generate_code(
+            requirements_content = self.generate_code(
                 "Create a requirements.txt file based on the dependencies in the code and test files provided.",
                 role="requirements",
                 files=files,
             )
 
-            requirements_contents = self.extract_code(requirements)
-            if requirements_contents:
-                requirements_content = requirements_contents[0]
+            if len(requirements_content) > 3:
+                requirements_content = self.filter_requirements(requirements_content)
+                self.write_to_file("requirements.txt", requirements_content)
 
-                if len(requirements_content) > 3:
-                    requirements_content = self.filter_requirements(requirements_content)
-                    self.write_to_file("requirements.txt", requirements_content)
+                existing_requirements_file = next((f for f in files if f["path"] == "requirements.txt"), None)
+                if existing_requirements_file:
+                    existing_requirements_file["content"] = requirements_content
+                else:
+                    files.append(
+                        {
+                            "path": "requirements.txt",
+                            "type": "requirements",
+                            "content": requirements_content,
+                        }
+                    )
 
-                    existing_requirements_file = next((f for f in files if f["path"] == "requirements.txt"), None)
-                    if existing_requirements_file:
-                        existing_requirements_file["content"] = requirements_content
-                    else:
-                        files.append(
-                            {
-                                "path": "requirements.txt",
-                                "type": "requirements",
-                                "content": requirements_content,
-                            }
-                        )
-
-                    self.install_requirements()
+                self.install_requirements()
 
             error_feedback = ""
             for file in files:
                 if file["type"] == "test":
                     test_success, run_info = self.execute_script(file["path"])
                     if not test_success:
-                        error_feedback += (
-                            f"Test errors in {file['path']}:\n{run_info}\n"
+                        code_objects = self.extract_code(run_info)
+                        code_blocks = "\n".join(
+                            f"```{obj['type']}\n{obj['content']}\n```"
+                            for obj in code_objects
                         )
+                        cleaned_text = re.sub(r"```html.*?```", "", run_info, flags=re.DOTALL)
+                        error_feedback += (
+                            f"Test errors in {file['path']}:\n{cleaned_text}\n"
+                        )
+                        
+                        error_feedback += code_blocks
                         await handle_verbose(
                             "Tests failed. The model will try to adjust the code based on the feedback."
                         )
@@ -440,9 +468,17 @@ class CodeGenerator:
                             file["path"]
                         )
                         if not script_success:
-                            error_feedback += (
-                                f"Script errors in {file['path']}:\n{run_info}\n"
+                            code_objects = self.extract_code(run_info)
+                            code_blocks = "\n".join(
+                                #f"```{obj['type']}\n{clean_html_with_bs(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
+                                f"```xpath map\n{json.dumps(generate_xpath_map(obj['content'])) if obj['type'] == 'html' else obj['content']}\n```"
+                                for obj in code_objects
                             )
+                            cleaned_text = re.sub(r"```html.*?```", "", run_info, flags=re.DOTALL)
+                            error_feedback += (
+                                f"Script errors in {file['path']}:\n{cleaned_text}\n"
+                            )
+                            error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
                             await handle_verbose(
                                 "Script execution failed. The model will try to adjust the code based on the feedback."
                             )
@@ -457,3 +493,76 @@ class CodeGenerator:
         await handle_verbose(
             "Could not complete the task after several attempts. Consider providing more details or revising your description."
         )
+
+def clean_html_with_bs(content):
+    soup = BeautifulSoup(content, "html.parser")
+    
+    for element in soup.find_all("path"):
+        element.decompose()
+        
+    for element in soup.find_all("script"):
+        element.decompose()
+        
+    for element in soup.find_all("style"):
+        element.decompose()
+        
+    for element in soup.find_all("link"):
+        element.decompose()
+        
+    for element in soup.find_all("meta"):
+        element.decompose()
+        
+    for element in soup.find_all("svg"):
+        element.decompose()
+    for element in soup.find_all("noscript"):
+        element.decompose()
+    
+    for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+        comment.extract()
+        
+    allowed_attributes = {"id", "href", "src", "alt", "title", "name", "type", "value", "placeholder"}
+    
+    for element in soup.find_all():
+        attributes_to_remove = [attr for attr in element.attrs if attr not in allowed_attributes]
+        for attr in attributes_to_remove:
+            element.attrs.pop(attr)
+    
+    return str(soup)
+
+
+def generate_xpath_map(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+    xpath_map = {}
+
+    # Função para calcular o XPath de um elemento
+    def get_xpath(element):
+        components = []
+        for parent in element.parents:
+            if parent.name:
+                siblings = parent.find_all(element.name, recursive=False)
+                if len(siblings) > 1:
+                    # Adiciona índice se houver irmãos com o mesmo nome
+                    index = siblings.index(element) + 1
+                    components.append(f"{parent.name}[{index}]")
+                else:
+                    components.append(parent.name)
+        components.reverse()
+        components.append(element.name)
+        return "/" + "/".join(components)
+
+    # Encontrar elementos interativos
+    interactive_elements = soup.find_all(["a", "button", "input", "textarea", "select"])
+
+    # Criar o mapa de XPath
+    for element in interactive_elements:
+        xpath = get_xpath(element)
+        element_type = element.name
+        details = {
+            "xpath": xpath,
+            "type": element_type,
+            "attributes": dict(element.attrs),
+            "text": element.get_text(strip=True),
+        }
+        xpath_map[xpath] = details
+
+    return xpath_map
