@@ -33,8 +33,8 @@ PROGRAMMER_PROMPT = (
     "The generated Python code should be structured to facilitate unit testing and allow dependency mocking, do not create tests. "
     "Do not return text outside of code blocks or additional explanations. "
     "For new code blocks, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
-    "Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. "
-    "Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
+    #"Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. "
+    #"Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
     "Service(ChromeDriverManager().install()) "
     'add the options:\nchrome_options.add_argument("--log-level=3") '
     #"options.add_argument(\"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36\")"
@@ -42,7 +42,8 @@ PROGRAMMER_PROMPT = (
     "chrome_options.add_argument(\"--disable-blink-features=AutomationControlled\") "
     "chrome_options.add_experimental_option(\"excludeSwitches\", [\"enable-automation\"]) "
     "chrome_options.add_experimental_option(\"useAutomationExtension\", False) "
-    'only one time, after driver.get, on the next line, get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
+    "service.command_line_args().append(\"--detach\") # Keep browser open "
+    'after driver.get and, on the next line, get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
     "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
 )
 
