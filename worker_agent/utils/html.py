@@ -62,11 +62,15 @@ def generate_xpath_map(html_content):
 
     for element in interactive_elements:
         xpath = get_xpath(element)
-        attributes = {key: value for key, value in element.attrs.items() if key in ["placeholder", "id", "href"]}
-        details = {
-            "attributes": attributes,
-            "text": element.get_text(strip=True),
-        }
-        xpath_map[xpath] = details
+        details = {}
+        attributes = {key: value for key, value in element.attrs.items() if key in ["placeholder", "id", "href"] and value}
+        if attributes:
+          details['attributes'] = attributes
+        text = element.get_text(strip=True).replace("\\n", "")
+        if text:
+          details['text'] = text
+        
+        if details:
+          xpath_map[xpath] = details
 
     return json.dumps(xpath_map)

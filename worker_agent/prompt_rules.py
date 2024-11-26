@@ -12,6 +12,7 @@ PROGRAMMER_PROMPT = (
     "Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. "
     "Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
     "Service(ChromeDriverManager().install()) "
+    'options.add_argument("--log-level=3") '
     'only one time, after driver.get, on the next line, get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
     "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
 )
@@ -49,7 +50,7 @@ CLARIFY_PROMPT = (
     'Otherwise state: "Nothing to clarify"'
 )
 ROADMAP_PROMPT = (
-    "Given a problem description, create a step-by-step roadmap to build a Python script and fulfill the initial prompt. "
+    "Given a problem description, create a step-by-step roadmap to build script and fulfill the initial prompt. "
     "Include potential issues, obstacles, and considerations for each step. "
     "The roadmap should focus on clarity and practicality. "
     "return only the roadmap, without any explanations or additional comments. "

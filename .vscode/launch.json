@@ -15,5 +15,17 @@
       "program": "${file}",
       "console": "internalConsole"
     },
+    {
+      "name": "Python Debugger: Test File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/tests/test_xpath_map.py",
+      "console": "internalConsole",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+    
   ]
 }
