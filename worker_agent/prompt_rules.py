@@ -33,11 +33,8 @@ PROGRAMMER_PROMPT = (
     "The generated Python code should be structured to facilitate unit testing and allow dependency mocking, do not create tests. "
     "Do not return text outside of code blocks or additional explanations. "
     "For new code blocks, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
-    #"Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. "
-    #"Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
     "Service(ChromeDriverManager().install()) "
     'add the options:\nchrome_options.add_argument("--log-level=3") '
-    #"options.add_argument(\"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36\")"
     f'chrome_options.add_argument("--user-data-dir={get_chrome_profile_path()}") '
     "chrome_options.add_argument(\"--disable-blink-features=AutomationControlled\") "
     "chrome_options.add_experimental_option(\"excludeSwitches\", [\"enable-automation\"]) "
