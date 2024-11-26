@@ -479,7 +479,8 @@ class CodeGenerator:
                                     f"```xpath map\n{generate_xpath_map(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
                                 for obj in code_objects
                             )
-                            error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
+                            if code_blocks:
+                                error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
                             await handle_verbose(
                                 "Script execution failed. The model will try to adjust the code based on the feedback."
                             )
