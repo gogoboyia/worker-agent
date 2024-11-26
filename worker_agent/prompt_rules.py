@@ -1,3 +1,27 @@
+import os
+import platform
+
+def get_chrome_profile_path():
+    """
+    Retorna o caminho padrão do perfil de usuário do Google Chrome
+    baseado no sistema operacional.
+    
+    Returns:
+        str: Caminho do perfil do Chrome para o sistema operacional detectado.
+    """
+    user_home = os.path.expanduser("~")
+    system = platform.system()
+    if system == "Darwin":
+        chrome_profile_path = os.path.join(user_home, "Library", "Application Support", "Google", "Chrome", "worker-agent")
+    elif system == "Windows":
+        chrome_profile_path = os.path.join(user_home, "AppData", "Local", "Google", "Chrome", "User Data")
+    elif system == "Linux":
+        chrome_profile_path = os.path.join(user_home, ".config", "google-chrome")
+    else:
+        raise ValueError(f"Sistema operacional não suportado: {system}")
+
+    return chrome_profile_path
+
 PROGRAMMER_PROMPT = (
     "The scripts/programmer should be designed to work on macOS, Windows, and Linux. "
     "You are a Python programmer that writes code blocks (```python\\ncontent\\n```) to solve specific tasks. "
@@ -12,7 +36,12 @@ PROGRAMMER_PROMPT = (
     "Do not use placeholder paths like 'path/to/dependency' or 'C:/path/to/dependency'. "
     "Instead, handle dependencies and paths dynamically within the code or use methods that manage resources automatically. "
     "Service(ChromeDriverManager().install()) "
-    'options.add_argument("--log-level=3") '
+    'add the options:\nchrome_options.add_argument("--log-level=3") '
+    #"options.add_argument(\"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36\")"
+    f'chrome_options.add_argument("--user-data-dir={get_chrome_profile_path()}") '
+    "chrome_options.add_argument(\"--disable-blink-features=AutomationControlled\") "
+    "chrome_options.add_experimental_option(\"excludeSwitches\", [\"enable-automation\"]) "
+    "chrome_options.add_experimental_option(\"useAutomationExtension\", False) "
     'only one time, after driver.get, on the next line, get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
     "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
 )
