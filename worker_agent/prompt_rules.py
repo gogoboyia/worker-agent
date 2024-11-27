@@ -67,13 +67,17 @@ REQUIREMENTS_PROMPT = (
     "Do not return packages with code blocks or additional explanations. "
 )
 
+system_info = "macos"
+default_browser = "chrome"
 
 CLARIFY_PROMPT = (
-    "Given some instructions for building a Python script, determine if anything needs to be clarified, do not carry them out. "
+    "Given some instructions that will be executed by another programming AI, determine if anything needs to be clarified, do not carry them out. "
     "Include potential issues, obstacles, and considerations,"
     "ask a single clarification question. "
     "respond in the same language as the prompt was made. "
     "ask short questions. "
+    "My operating System: {system_info}"
+    "My default Browser: {default_browser}"
     'Otherwise state: "Nothing to clarify"'
 )
 ROADMAP_PROMPT = (
@@ -98,8 +102,7 @@ Output:
     "description": "Opens YouTube in Chrome and searches for a specified term.",
     "filepath": "example/open_chrome_example.py",
     "arguments": {
-        "search_term": "romantic music",
-        "additional_option": "..."
+        "search_term": "TERM_TO_SEARCH",
     }
 }
 ```
@@ -117,7 +120,7 @@ prompt: play romantic music
         "description": "Open YouTube in Chrome and search for a term",
         "filepath": "example/open_chrome_example.py",
         "arguments": {
-            "arg1": "romantic music",
+            "search_term": "TERM_TO_SEARCH",
             "arg2": "..."
         }
     }
