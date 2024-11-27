@@ -40,7 +40,7 @@ PROGRAMMER_PROMPT = (
     "chrome_options.add_experimental_option(\"excludeSwitches\", [\"enable-automation\"]) "
     "chrome_options.add_experimental_option(\"useAutomationExtension\", False) "
     "service.command_line_args().append(\"--detach\") # Keep browser open "
-    'after driver.get and, on the next line, get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
+    'every time after exception get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
     "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
 )
 
@@ -82,3 +82,57 @@ ROADMAP_PROMPT = (
     "The roadmap should focus on clarity and practicality. "
     "return only the roadmap, without any explanations or additional comments. "
 )
+
+
+AGENT_DOC_PROMPT = """"
+Given the content of a script, your task is to document its callable functions in JSON format.
+
+The JSON should include:
+- description: A brief summary of what the script does.
+- filepath: The full path to the script.
+- arguments: A dictionary of the script's arguments with example values.
+
+Output:
+```json
+{
+    "description": "Opens YouTube in Chrome and searches for a specified term.",
+    "filepath": "example/open_chrome_example.py",
+    "arguments": {
+        "search_term": "romantic music",
+        "additional_option": "..."
+    }
+}
+```
+"""
+
+AGENT_SCRIPT_RUNNER_PROMPT = """"
+Given a user prompt, select the script description that best corresponds to the prompt.
+You will receive a list of script calls in JSON format. For example:
+
+Input exemple:
+prompt: play romantic music
+```json
+[
+    {
+        "description": "Open YouTube in Chrome and search for a term",
+        "filepath": "example/open_chrome_example.py",
+        "arguments": {
+            "arg1": "romantic music",
+            "arg2": "..."
+        }
+    }
+]
+```
+Output:
+```json
+{
+    "description": "Open YouTube in Chrome and search for a term",
+    "filepath": "example/open_chrome_example.py",
+    "arguments": {
+        "arg1": "romantic music",
+        "arg2": "..."
+    }
+}
+```
+Otherwise state: "Nothing to run"
+"""
