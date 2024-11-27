@@ -81,7 +81,7 @@ CLARIFY_PROMPT = (
     'Otherwise state: "Nothing to clarify"'
 )
 ROADMAP_PROMPT = (
-    "Given a problem description, create a step-by-step roadmap to build script and fulfill the initial prompt. "
+    "Given a problem description, create a step-by-step roadmap to be executed by another programming AI. "
     "Include potential issues, obstacles, and considerations for each step. "
     "The roadmap should focus on clarity and practicality. "
     "return only the roadmap, without any explanations or additional comments. "
