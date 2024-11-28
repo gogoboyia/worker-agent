@@ -71,8 +71,62 @@ class ClarifierAgent:
         response = fast_chat_programmer(messages, temperature=0.2)
         return response.strip()
 
+    async def conduct_clarification_interview(
+        self, user_prompt, max_clarifications=10, clarification_handler=None
+    ):
+        """
+        Conducts the clarification interview process.
+
+        Args:
+            user_prompt (str): The initial instructions provided by the user.
+            max_clarifications (int): Maximum number of clarification rounds.
+            clarification_handler (callable, optional): A callback function that receives a clarification question and returns the answer.
+
+        Returns:
+            tuple: A tuple containing the roadmap prompt and the generated roadmap.
+        """
+        clarification_interview = []
+        for _ in range(max_clarifications):
+            clarification = self.clarify(user_prompt, clarification_interview)
+            if clarification == "Nothing to clarify":
+                break
+            else:
+                if clarification_handler and callable(clarification_handler):
+                    if asyncio.iscoroutinefunction(clarification_handler):
+                        clarification_response = await clarification_handler(
+                            clarification
+                        )
+                    else:
+                        clarification_response = clarification_handler(clarification)
+                else:
+                    clarification_response = input(
+                        f"Please answer the clarification question: {clarification}\n"
+                    )
+                clarification_interview.append(
+                    {"question": clarification, "answer": clarification_response}
+                )
+
+        if clarification_interview:
+            clarifications_text = "\n".join(
+                [f"Q: {qa['question']}\nA: {qa['answer']}" for qa in clarification_interview]
+            )
+            roadmap_prompt = f"Prompt: {user_prompt}\nClarifications:\n{clarifications_text}"
+        else:
+            roadmap_prompt = f"Prompt: {user_prompt}"
+
+        roadmap = self.generate_roadmap(roadmap_prompt)
+
+        return roadmap_prompt, roadmap
+
+
 class CodeGenerator:
-    def __init__(self, workspace_dir, max_iterations=5, clarifier_agent=None, generate_tests=True):
+    def __init__(
+        self,
+        workspace_dir,
+        max_iterations=5,
+        clarifier_agent=None,
+        generate_tests=True,
+    ):
         self.workspace_dir = workspace_dir
         self.env_dir = os.path.join(self.workspace_dir, "env")
         self.max_iterations = max_iterations
@@ -80,7 +134,7 @@ class CodeGenerator:
         self.generate_tests = generate_tests
 
         self.create_virtualenv(self.env_dir)
-        self.clarifier = clarifier_agent if clarifier_agent else ClarifierAgent()
+        self.clarifier = clarifier_agent
 
     def create_virtualenv(self, env_dir):
         """
@@ -318,12 +372,19 @@ class CodeGenerator:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
 
-    async def run(self, user_prompt, max_clarifications=10, clarification_handler=None, verbose_handler=None):
+    async def run(
+        self,
+        user_prompt,
+        max_clarifications=10,
+        clarification_handler=None,
+        verbose_handler=None,
+    ):
         """
         Executes the code generation process based on the user's prompt.
 
         Args:
             user_prompt (str): The instructions provided by the user.
+            max_clarifications (int): Maximum number of clarification rounds.
             clarification_handler (callable, optional): A callback function that receives a clarification question and returns the answer.
                                                         Should have the signature: func(question: str) -> str
                                                         If not provided, uses input() for interactions.
@@ -339,29 +400,11 @@ class CodeGenerator:
             else:
                 verbose_handler(message)
 
-        clarification_interview = []
-        for _ in range(max_clarifications):
-            clarification = self.clarifier.clarify(user_prompt, clarification_interview)
-            if clarification == "Nothing to clarify":
-                break
-            else:
-                if clarification_handler and callable(clarification_handler):
-                    if asyncio.iscoroutinefunction(clarification_handler):
-                        clarification_response = await clarification_handler(clarification)
-                    else:
-                        clarification_response = clarification_handler(clarification)
-                else:
-                    clarification_response = input(f"Please answer the clarification question: {clarification}\n")
-                clarification_interview.append({'question': clarification, 'answer': clarification_response})
+        # Use the ClarifierAgent to conduct the clarification interview
+        roadmap_prompt, roadmap = await self.clarifier.conduct_clarification_interview(
+            user_prompt, max_clarifications, clarification_handler
+        )
 
-        if clarification_interview:
-            clarifications_text = "\n".join([f"Q: {qa['question']}\nA: {qa['answer']}" for qa in clarification_interview])
-            roadmap_prompt = f"Prompt: {user_prompt}\nClarifications:\n{clarifications_text}"
-        else:
-            roadmap_prompt = f"Prompt: {user_prompt}"
-
-        roadmap = self.clarifier.generate_roadmap(roadmap_prompt)
-        
         print(f"Roadmap:\n{roadmap}")
 
         self.prompt = f"prompt: {user_prompt}\nroadmap:\n{roadmap}"
@@ -385,14 +428,20 @@ class CodeGenerator:
             )
             code_blocks = self.extract_code(code)
             for code_block in code_blocks:
-                path = self.extract_path(code_block['content'])
-                self.write_to_file(path, code_block['content'])
+                path = self.extract_path(code_block["content"])
+                self.write_to_file(path, code_block["content"])
 
-                existing_file = next((f for f in files if f["path"] == path), None)
+                existing_file = next(
+                    (f for f in files if f["path"] == path), None
+                )
                 if existing_file:
-                    existing_file["content"] = code_block['content']
+                    existing_file["content"] = code_block["content"]
                 else:
-                    file = {"path": path, "type": "code", "content": code_block['content']}
+                    file = {
+                        "path": path,
+                        "type": "code",
+                        "content": code_block["content"],
+                    }
                     files.append(file)
 
                 if self.generate_tests:
@@ -403,15 +452,21 @@ class CodeGenerator:
                     )
                     test_blocks = self.extract_code(test_code)
                     if test_blocks:
-                        test_content = test_blocks[0]['content']
+                        test_content = test_blocks[0]["content"]
                         test_path = self.extract_path(test_content)
                         self.write_to_file(test_path, test_content)
 
-                        existing_test_file = next((f for f in files if f["path"] == test_path), None)
+                        existing_test_file = next(
+                            (f for f in files if f["path"] == test_path), None
+                        )
                         if existing_test_file:
                             existing_test_file["content"] = test_content
                         else:
-                            test_file = {"path": test_path, "type": "test", "content": test_content}
+                            test_file = {
+                                "path": test_path,
+                                "type": "test",
+                                "content": test_content,
+                            }
                             files.append(test_file)
 
             requirements_content = self.generate_code(
@@ -452,7 +507,7 @@ class CodeGenerator:
                         error_feedback += (
                             f"Test errors in {file['path']}:\n{cleaned_text}\n"
                         )
-                        
+
                         error_feedback += code_blocks
                         await handle_verbose(
                             "Tests failed. The model will try to adjust the code based on the feedback."
@@ -471,12 +526,12 @@ class CodeGenerator:
                             error_feedback += (
                                 f"Script errors in {file['path']}:\n{cleaned_text}\n"
                             )
-                            
+
                             code_objects = self.extract_code(run_info)
                             if code_objects:
                                 code_objects = [code_objects[-1]]
                             code_blocks = "\n".join(
-                                    f"```xpath map\n{generate_xpath_map(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
+                                f"```xpath map\n{generate_xpath_map(obj['content']) if obj['type'] == 'html' else obj['content']}\n```"
                                 for obj in code_objects
                             )
                             if code_blocks:

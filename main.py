@@ -1,7 +1,7 @@
 import asyncio
 import os
 import shutil
-from worker_agent.agent import CodeGenerator
+from worker_agent.agent import ClarifierAgent, CodeGenerator
 
 WORKSPACE_DIR = "workspace"
 MAX_ITERATIONS = 15
@@ -14,22 +14,36 @@ if os.path.exists(WORKSPACE_DIR):
 # Create workspace directory
 os.makedirs(WORKSPACE_DIR, exist_ok=True)
 
+
 def main():
-    code_generator = CodeGenerator(WORKSPACE_DIR, MAX_ITERATIONS, generate_tests=False)
+    clarifier_agent = ClarifierAgent()
+    code_generator = CodeGenerator(
+        WORKSPACE_DIR,
+        MAX_ITERATIONS,
+        generate_tests=False,
+        clarifier_agent=clarifier_agent,
+    )
 
     user_prompt = "Open YouTube Music in Chrome and play a funk playlist."
 
     # Define a handler for clarification responses, if desired
     async def my_clarification_handler(question):
-        # Implement logic to respond to clarification questions
-        # For example, map known questions to predefined answers
-        # Or integrate with another interface to obtain user responses
-        print(f"Clarification Question: {question}")
-        # For this example, return a fixed response
-        response = "make reasonable assumption."
+        """
+        Handles clarification questions by prompting the user for input or
+        returning a default response if none is provided.
+        """
+        # Prompt user for clarification
+        response = input(f"Clarification Question (empty to deduce): {question}")
+
+        # Provide a default response if the input is empty
+        if not response:
+            response = "make reasonable assumption."
+
         return response
 
-    asyncio.run(code_generator.run(user_prompt, clarification_handler=my_clarification_handler))
+    asyncio.run(
+        code_generator.run(user_prompt, clarification_handler=my_clarification_handler)
+    )
 
 
 if __name__ == "__main__":
