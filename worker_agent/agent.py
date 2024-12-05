@@ -126,6 +126,7 @@ class CodeGenerator:
         max_iterations=5,
         clarifier_agent=None,
         generate_tests=True,
+        messages=None,
     ):
         self.workspace_dir = workspace_dir
         self.env_dir = os.path.join(self.workspace_dir, "env")
@@ -135,6 +136,18 @@ class CodeGenerator:
 
         self.create_virtualenv(self.env_dir)
         self.clarifier = clarifier_agent
+
+        # Mensagens padrão
+        default_messages = {
+            "starting_iteration": "Starting iteration {iteration}...",
+            "tests_failed": "Tests failed. The model will try to adjust the code based on the feedback.",
+            "script_execution_failed": "Script execution failed. The model will try to adjust the code based on the feedback.",
+            "task_completed": "Task completed successfully! The code and tests work correctly.",
+            "task_failed": "Could not complete the task after several attempts. Consider providing more details or revising your description.",
+        }
+
+        # Use mensagens customizadas se fornecidas
+        self.messages = messages if messages else default_messages
 
     def create_virtualenv(self, env_dir):
         """
@@ -414,7 +427,9 @@ class CodeGenerator:
         error_feedback = None
 
         for iteration in range(1, self.max_iterations + 1):
-            await handle_verbose(f"Starting iteration {iteration}...")
+            await handle_verbose(
+                self.messages["starting_iteration"].format(iteration=iteration)
+            )
             files = [f for f in files if f["type"] == "code" or f["type"] == "test"]
 
             if error_feedback:
@@ -509,9 +524,7 @@ class CodeGenerator:
                         )
 
                         error_feedback += code_blocks
-                        await handle_verbose(
-                            "Tests failed. The model will try to adjust the code based on the feedback."
-                        )
+                        await handle_verbose(self.messages["tests_failed"])
                         print(error_feedback)
                         break  # Stop executing tests if one fails
             else:
@@ -536,17 +549,11 @@ class CodeGenerator:
                             )
                             if code_blocks:
                                 error_feedback += f"use de path map to resolve find_element problems:\n{code_blocks}"
-                            await handle_verbose(
-                                "Script execution failed. The model will try to adjust the code based on the feedback."
-                            )
+                            await handle_verbose(self.messages["script_execution_failed"])
                             print(error_feedback)
                             break
                 else:
-                    await handle_verbose(
-                        "Task completed successfully! The code and tests work correctly."
-                    )
+                    await handle_verbose(self.messages["task_completed"])
                     return
 
-        await handle_verbose(
-            "Could not complete the task after several attempts. Consider providing more details or revising your description."
-        )
+        await handle_verbose(self.messages["task_failed"])
