@@ -30,7 +30,6 @@ PROGRAMMER_PROMPT = (
     "Every code block represent one single file. "
     "Every code block must start with a comment indicating the path of the file, e.g., '# YOUR_SCRIPT_NAME.py'. "
     "Output must be strictly limited to code blocks. "
-    "The generated Python code should be structured to facilitate unit testing and allow dependency mocking, do not create tests. "
     "Do not return text outside of code blocks or additional explanations. "
     "For new code blocks, the name 'YOUR_SCRIPT_NAME' should be replaced with another name that makes sense for what the script does. "
     "Service(ChromeDriverManager().install()) "
@@ -42,7 +41,6 @@ PROGRAMMER_PROMPT = (
     "service.command_line_args().append(\"--detach\") # Keep browser open "
     'every time after exception get page content for debugging: sys.stdout.write(f"page source:\\n```html\\n{driver.page_source}\\n```\\n") '
     "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
-    "Avoid using `input(\"Press Enter to close the browser...\")` to pause execution. "
 )
 
 TESTER_PROMPT = (

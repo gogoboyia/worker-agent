@@ -9,6 +9,7 @@ from stdlib_list import stdlib_list
 from worker_agent.llm import fast_chat_programmer
 from worker_agent.prompt_rules import CLARIFY_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 from worker_agent.qwen import slow_local_chat_programmer
+from worker_agent.utils.code_blocks import extract_code
 from worker_agent.utils.html import generate_xpath_map
 
 def is_file_relevant(user_prompt, file_path, file_content):
@@ -28,6 +29,67 @@ def is_file_relevant(user_prompt, file_path, file_content):
 
     return response.startswith("True")
 
+def is_directory_relevant(user_prompt, dir_path, dir_listing):
+    messages = [
+        {"role": "system", "content": (
+            "You are a Python assistant that decides if a given directory is relevant to a given user prompt.\n"
+            "We will provide a user prompt and a directory listing.\n"
+            "You must respond strictly with 'True' or 'False' without quotes or explanations.\n"
+            "Criteria: The directory is relevant if it may contain files or subdirectories that need to be read, edited,\n"
+            "or could influence changes required by the prompt.\n"
+            "If unsure, return True. Be inclusive rather than exclusive.\n"
+            "Only respond with True or False."
+        )},
+        {"role": "user", "content": f"User prompt: {user_prompt}\nDirectory: {dir_path}\nContents:\n" + "\n".join(dir_listing)}
+    ]
+    response = slow_local_chat_programmer(messages, temperature=0.1)
+    response = response.strip()
+    return response.startswith("True")
+
+def filter_relevant_files_recursive(user_prompt, current_dir):
+    relevant_files = []
+    try:
+        entries = os.listdir(current_dir)
+    except Exception:
+        return relevant_files
+
+    dirs = []
+    files = []
+    for e in entries:
+        full_path = os.path.join(current_dir, e)
+        if os.path.isdir(full_path):
+            dirs.append(e)
+        else:
+            files.append(e)
+
+    for f in files:
+        full_path = os.path.join(current_dir, f)
+        if os.path.isfile(full_path) and os.path.getsize(full_path) < 2_000_000:
+            try:
+                with open(full_path, "r", encoding="utf-8", errors="ignore") as file_obj:
+                    content = file_obj.read()
+                if is_file_relevant(user_prompt, full_path, content):
+                    relevant_files.append({"path": full_path, "content": content})
+            except:
+                pass
+
+    # Then check directories for relevance before recursing into them
+    if dirs:
+        if is_directory_relevant(user_prompt, current_dir, dirs):
+            # If current directory is relevant, we check each of its subdirectories
+            for d in dirs:
+                full_subdir_path = os.path.join(current_dir, d)
+                subdir_entries = []
+                try:
+                    subdir_entries = os.listdir(full_subdir_path)
+                except:
+                    pass
+                # Check if this particular subdirectory is relevant before going inside
+                if is_directory_relevant(user_prompt, full_subdir_path, subdir_entries):
+                    relevant_files.extend(filter_relevant_files_recursive(user_prompt, full_subdir_path))
+
+    return relevant_files
+
 class ClarifierAgent:
     """
     Agent responsible for clarifying the initial prompt and providing a roadmap for problem resolution.
@@ -36,41 +98,6 @@ class ClarifierAgent:
 
     def __init__(self, workspace_dir):
         self.workspace_dir = workspace_dir
-
-    def load_project_files(self):
-        """
-        Load all project files from the workspace_dir recursively, ignoring irrelevant directories.
-        """
-        ignored_dirs = {"node_modules", ".git", "__pythoncode__"}
-        project_files = []
-        for root, dirs, files in os.walk(self.workspace_dir):
-            # Filter out ignored directories
-            dirs[:] = [d for d in dirs if d not in ignored_dirs]
-
-            for file in files:
-                full_path = os.path.join(root, file)
-                if os.path.isfile(full_path) and os.path.getsize(full_path) < 2_000_000:
-                    try:
-                        with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
-                            content = f.read()
-                        rel_path = os.path.relpath(full_path, self.workspace_dir)
-                        project_files.append({"path": rel_path, "content": content})
-                    except:
-                        pass
-        return project_files
-
-    def filter_relevant_files(self, user_prompt):
-        """
-        Instead of a simple keyword-based filter, we will use the LLM to decide if each file is relevant.
-        For each file, call the model and ask if it's relevant. If True, keep it.
-        This is more sophisticated and precise.
-        """
-        all_files = self.load_project_files()
-        relevant_files = []
-        for f in all_files:
-            if is_file_relevant(user_prompt, f["path"], f["content"]):
-                relevant_files.append(f)
-        return relevant_files
 
     def clarify(self, instructions, previous_clarifications=None, relevant_files=None):
         """
@@ -135,7 +162,7 @@ class ClarifierAgent:
         Conducts the clarification interview process.
         Uses the LLM-based relevance filtering for files.
         """
-        relevant_files = self.filter_relevant_files(user_prompt)
+        relevant_files = filter_relevant_files_recursive(user_prompt, self.workspace_dir)
 
         clarification_interview = []
         for _ in range(max_clarifications):
@@ -200,32 +227,6 @@ class CodeGenerator:
 
         self.messages = messages if messages else default_messages
 
-    def load_project_files(self):
-        ignored_dirs = {"node_modules", ".git", "__pythoncode__"}
-        project_files = []
-        for root, dirs, files in os.walk(self.workspace_dir):
-            dirs[:] = [d for d in dirs if d not in ignored_dirs]
-            for file in files:
-                full_path = os.path.join(root, file)
-                if os.path.isfile(full_path) and os.path.getsize(full_path) < 2_000_000:
-                    try:
-                        with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
-                            content = f.read()
-                        rel_path = os.path.relpath(full_path, self.workspace_dir)
-                        project_files.append({"path": rel_path, "content": content})
-                    except:
-                        pass
-        return project_files
-
-    def filter_relevant_files(self, user_prompt):
-        # Use the same sophisticated approach as ClarifierAgent
-        all_files = self.load_project_files()
-        relevant_files = []
-        for f in all_files:
-            if is_file_relevant(user_prompt, f["path"], f["content"]):
-                relevant_files.append(f)
-        return relevant_files
-
     def create_virtualenv(self, env_dir):
         import venv
         builder = venv.EnvBuilder(with_pip=True)
@@ -238,65 +239,6 @@ class CodeGenerator:
         else:
             python_executable = os.path.join(self.env_dir, "bin", "python")
         return python_executable
-
-    def extract_code(self, text):
-        LANGUAGE_EXTENSION_MAP = {
-            'python': 'py',
-            'html': 'html',
-            'javascript': 'js',
-            'js': 'js',
-            'php': 'php',
-            'java': 'java',
-            'c++': 'cpp',
-            'cpp': 'cpp',
-            'c#': 'cs',
-            'cs': 'cs',
-            'bash': 'sh',
-            'shell': 'sh',
-            'go': 'go',
-            'ruby': 'rb',
-            'perl': 'pl',
-            'rust': 'rs',
-        }
-
-        result = []
-        code_block_started = False
-        code = ''
-        lang = ''
-        lines = text.split('\n')
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            if not code_block_started:
-                if line.startswith('```'):
-                    code_block_started = True
-                    lang = line[3:].strip()
-                    if not lang:
-                        lang = None
-                    i += 1
-                    continue
-            else:
-                if line.startswith('```'):
-                    code_block_started = False
-                    extension = LANGUAGE_EXTENSION_MAP.get(lang.lower() if lang else '', lang)
-                    result.append({'content': code.rstrip('\n'), 'type': lang, 'extension': extension})
-                    code = ''
-                    lang = ''
-                    i += 1
-                    continue
-                else:
-                    code += line + '\n'
-            i += 1
-
-        return result
-
-    def extract_path(self, file_content):
-        first_line = file_content.split("\n")[0].strip()
-        if first_line.startswith("#"):
-            path_info = re.sub(r"^#\s*\.?\/?", "", first_line).strip()
-            return path_info
-        else:
-            return None
 
     def generate_code(self, prompt, role="programmer", files=None, error_feedback=None):
         if role == "programmer":
@@ -415,7 +357,6 @@ class CodeGenerator:
             else:
                 verbose_handler(message)
 
-        # Clarification and roadmap
         roadmap_prompt, roadmap = await self.clarifier.conduct_clarification_interview(
             user_prompt, max_clarifications, clarification_handler
         )
@@ -425,8 +366,7 @@ class CodeGenerator:
         self.prompt = f"prompt: {user_prompt}\nroadmap:\n{roadmap}"
         test_prompt = "Write unit tests for the generated code."
 
-        # Load relevant files again with new approach
-        relevant_files = self.filter_relevant_files(user_prompt)
+        relevant_files = filter_relevant_files_recursive(user_prompt, self.workspace_dir)
 
         files = []
         error_feedback = None
@@ -447,9 +387,9 @@ class CodeGenerator:
                 files=relevant_files,
                 error_feedback=error_feedback,
             )
-            code_blocks = self.extract_code(code)
+            code_blocks = extract_code(code)
             for code_block in code_blocks:
-                path = self.extract_path(code_block["content"])
+                path = code_block["path"]
                 self.write_to_file(path, code_block["content"])
 
                 existing_file = next((f for f in files if f["path"] == path), None)
@@ -469,10 +409,10 @@ class CodeGenerator:
                         role="tester",
                         files=files,
                     )
-                    test_blocks = self.extract_code(test_code)
+                    test_blocks = extract_code(test_code)
                     if test_blocks:
                         test_content = test_blocks[0]["content"]
-                        test_path = self.extract_path(test_content)
+                        test_path = code_block["path"]
                         self.write_to_file(test_path, test_content)
 
                         existing_test_file = next(
@@ -517,7 +457,7 @@ class CodeGenerator:
                 if file["type"] == "test":
                     test_success, run_info = self.execute_script(file["path"])
                     if not test_success:
-                        code_objects = self.extract_code(run_info)
+                        code_objects = extract_code(run_info)
                         code_blocks = "\n".join(
                             f"```{obj['type']}\n{obj['content']}\n```"
                             for obj in code_objects
@@ -532,7 +472,7 @@ class CodeGenerator:
                         print(error_feedback)
                         break
             else:
-                # If all tests pass, execute code files
+                # If tests pass, execute code files
                 for file in files:
                     if file["type"] == "code":
                         script_success, run_info = self.execute_script(file["path"])
@@ -542,7 +482,7 @@ class CodeGenerator:
                                 f"Script errors in {file['path']}:\n{cleaned_text}\n"
                             )
 
-                            code_objects = self.extract_code(run_info)
+                            code_objects = extract_code(run_info)
                             if code_objects:
                                 code_objects = [code_objects[-1]]
                             code_blocks = "\n".join(
