@@ -341,6 +341,41 @@ class CodeGenerator:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
             return False, str(e)
 
+    def code_achieves_prompt_goal(self, user_prompt, files):
+        """
+        Usa o novo agente system_rule para verificar se o código gerado
+        de fato faz o que o usuário solicitou.
+        Retorna True ou False estritamente, conforme a resposta do modelo.
+        """
+        # Agrupa o conteúdo de todos os arquivos gerados
+        all_code_content = []
+        for f in files:
+            if f["type"] in ("code", "test"):
+                all_code_content.append(f"File: {f['path']}\n{f['content']}\n")
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a Python assistant (system_rule) that checks if the entire codebase below "
+                    "fulfills the user's initial request. Respond strictly with 'True' or 'False' without quotes, "
+                    "no explanation. If you are unsure, respond with 'False'."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"User prompt: {user_prompt}\n\n"
+                    "Below is the code that was generated:\n\n"
+                    + "\n".join(all_code_content)
+                ),
+            },
+        ]
+
+        response = slow_local_chat_programmer(messages, temperature=0.1)
+        response = response.strip()
+        return response.startswith("True")
+
     async def run(
         self,
         user_prompt,
@@ -472,7 +507,6 @@ class CodeGenerator:
                         print(error_feedback)
                         break
             else:
-                # If tests pass, execute code files
                 for file in files:
                     if file["type"] == "code":
                         script_success, run_info = self.execute_script(file["path"])
@@ -495,7 +529,15 @@ class CodeGenerator:
                             print(error_feedback)
                             break
                 else:
-                    await handle_verbose(self.messages["task_completed"])
-                    return
+                    if self.code_achieves_prompt_goal(user_prompt, files):
+                        await handle_verbose(self.messages["task_completed"])
+                        return
+                    else:
+                        error_feedback = (
+                            "The generated code does not fully accomplish the user prompt yet.\n"
+                            "Please refine it."
+                        )
+                        print(error_feedback)
+                        continue
 
         await handle_verbose(self.messages["task_failed"])
