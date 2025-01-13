@@ -316,11 +316,11 @@ class CodeGenerator:
             result = subprocess.run(
                 [python_executable, full_path], capture_output=True, text=True
             )
-            print(f"Execution output of {os.path.basename(filepath)}:\n{result.stdout}")
+            """print(f"Execution output of {os.path.basename(filepath)}:\n{result.stdout}")
             if result.stderr:
                 print(
                     f"Errors during execution of {os.path.basename(filepath)}:\n{result.stderr}"
-                )
+                ) """
             return len(result.stderr) == 0, f"Result:\n{result.stdout}\nErrors:\n{result.stderr}"
         except Exception as e:
             print(f"Error executing {os.path.basename(filepath)}: {e}")
