@@ -7,21 +7,14 @@ import asyncio
 from stdlib_list import stdlib_list
 
 from worker_agent.llm import fast_chat_programmer
-from worker_agent.prompt_rules import CLARIFY_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
+from worker_agent.prompt_rules import CLARIFY_PROMPT, CODE_ACHIEVES_GOAL_PROMPT, DIRECTORY_RELEVANCE_PROMPT, FILE_RELEVANCE_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 from worker_agent.qwen import slow_local_chat_programmer
 from worker_agent.utils.code_blocks import extract_code
 from worker_agent.utils.html import generate_xpath_map
 
 def is_file_relevant(user_prompt, file_path, file_content):
     messages = [
-        {"role": "system", "content": (
-            "You are a Python assistant that decides if a given file is relevant to a given user prompt.\n"
-            "We will provide a user prompt and a file content.\n"
-            "You must respond strictly with 'True' or 'False' without quotes or explanations.\n"
-            "Criteria: The file is relevant if it may need to be read, edited, or could influence the changes required by the prompt.\n"
-            "If unsure, return True. Be inclusive rather than exclusive.\n"
-            "Only respond with True or False."
-        )},
+        {"role": "system", "content": FILE_RELEVANCE_PROMPT},
         {"role": "user", "content": f"User prompt: {user_prompt}\nFile path: {file_path}\nFile content:\n{file_content}"}
     ]
     response = slow_local_chat_programmer(messages, temperature=0.1)
@@ -31,15 +24,7 @@ def is_file_relevant(user_prompt, file_path, file_content):
 
 def is_directory_relevant(user_prompt, dir_path, dir_listing):
     messages = [
-        {"role": "system", "content": (
-            "You are a Python assistant that decides if a given directory is relevant to a given user prompt.\n"
-            "We will provide a user prompt and a directory listing.\n"
-            "You must respond strictly with 'True' or 'False' without quotes or explanations.\n"
-            "Criteria: The directory is relevant if it may contain files or subdirectories that need to be read, edited,\n"
-            "or could influence changes required by the prompt.\n"
-            "If unsure, return True. Be inclusive rather than exclusive.\n"
-            "Only respond with True or False."
-        )},
+        {"role": "system", "content": DIRECTORY_RELEVANCE_PROMPT},
         {"role": "user", "content": f"User prompt: {user_prompt}\nDirectory: {dir_path}\nContents:\n" + "\n".join(dir_listing)}
     ]
     response = slow_local_chat_programmer(messages, temperature=0.1)
@@ -342,12 +327,6 @@ class CodeGenerator:
             return False, str(e)
 
     def code_achieves_prompt_goal(self, user_prompt, files):
-        """
-        Usa o novo agente system_rule para verificar se o código gerado
-        de fato faz o que o usuário solicitou.
-        Retorna True ou False estritamente, conforme a resposta do modelo.
-        """
-        # Agrupa o conteúdo de todos os arquivos gerados
         all_code_content = []
         for f in files:
             if f["type"] in ("code", "test"):
@@ -356,11 +335,7 @@ class CodeGenerator:
         messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are a Python assistant (system_rule) that checks if the entire codebase below "
-                    "fulfills the user's initial request. Respond strictly with 'True' or 'False' without quotes, "
-                    "no explanation. If you are unsure, respond with 'False'."
-                ),
+                "content": CODE_ACHIEVES_GOAL_PROMPT,
             },
             {
                 "role": "user",
@@ -372,7 +347,7 @@ class CodeGenerator:
             },
         ]
 
-        response = slow_local_chat_programmer(messages, temperature=0.1)
+        response = fast_chat_programmer(messages, temperature=0.1)
         response = response.strip()
         return response.startswith("True")
 

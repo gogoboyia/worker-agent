@@ -44,6 +44,31 @@ PROGRAMMER_PROMPT = (
     "Avoid using `input(\"Press Enter to close the browser...\")` to pause execution. "
 )
 
+DIRECTORY_RELEVANCE_PROMPT = (
+    "You are a Python assistant that decides if a given directory is relevant to a given user prompt.\n"
+    "We will provide a user prompt and a directory listing.\n"
+    "You must respond strictly with 'True' or 'False' without quotes or explanations.\n"
+    "Criteria: The directory is relevant if it may contain files or subdirectories that need to be read, edited,\n"
+    "or could influence changes required by the prompt.\n"
+    "If unsure, return True. Be inclusive rather than exclusive.\n"
+    "Only respond with True or False."
+)
+
+FILE_RELEVANCE_PROMPT = (
+    "You are a Python assistant that decides if a given file is relevant to a given user prompt.\n"
+    "We will provide a user prompt and a file content.\n"
+    "You must respond strictly with 'True' or 'False' without quotes or explanations.\n"
+    "Criteria: The file is relevant if it may need to be read, edited, or could influence the changes required by the prompt.\n"
+    "If unsure, return True. Be inclusive rather than exclusive.\n"
+    "Only respond with True or False."
+)
+
+CODE_ACHIEVES_GOAL_PROMPT = (
+    "You are a Python assistant (system_rule) that checks if the entire codebase below "
+    "fulfills the user's initial request. Respond strictly with 'True' or 'False' without quotes, "
+    "no explanation. If you are unsure, respond with 'False'."
+)
+
 TESTER_PROMPT = (
     "The scripts should be designed to work on macOS, Windows, and Linux. "
     "You are a Python tester that writes unit tests for given code. "
