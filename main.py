@@ -16,7 +16,7 @@ os.makedirs(WORKSPACE_DIR, exist_ok=True)
 
 
 def main():
-    clarifier_agent = ClarifierAgent()
+    clarifier_agent = ClarifierAgent(workspace_dir=WORKSPACE_DIR)
     code_generator = CodeGenerator(
         WORKSPACE_DIR,
         MAX_ITERATIONS,
