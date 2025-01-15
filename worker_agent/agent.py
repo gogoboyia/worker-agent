@@ -387,10 +387,6 @@ class CodeGenerator:
             )
             files = [f for f in files if f.get("type") in ["code", "test"]]
 
-            if error_feedback:
-                self.prompt = "Resolve the errors and problems based on the feedback."
-                test_prompt = "Resolve the errors and problems based on the feedback."
-
             code = self.generate_code(
                 self.prompt,
                 role="programmer",

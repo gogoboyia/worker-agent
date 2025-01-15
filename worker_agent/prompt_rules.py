@@ -43,6 +43,7 @@ PROGRAMMER_PROMPT = (
     "Do not use `print`, use `sys.stdout.write()` or `sys.stderr.write()` instead. "
     "Avoid using `input(\"Press Enter to close the browser...\")` to pause execution. "
     "Do not generate example codes, always return functional code. "
+    "When fixing a script do not generate a new `_fixed` file. "
 )
 
 DIRECTORY_RELEVANCE_PROMPT = (
