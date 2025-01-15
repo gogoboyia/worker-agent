@@ -6,6 +6,7 @@ import sys
 import asyncio
 from stdlib_list import stdlib_list
 
+from worker_agent.chatgpt import get_chatgpt_response
 from worker_agent.llm import fast_chat_programmer
 from worker_agent.prompt_rules import CLARIFY_PROMPT, CODE_ACHIEVES_GOAL_PROMPT, DIRECTORY_RELEVANCE_PROMPT, FILE_RELEVANCE_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 from worker_agent.qwen import slow_local_chat_programmer
@@ -256,7 +257,7 @@ class CodeGenerator:
         if error_feedback:
             messages.append({"role": "user", "content": f"Error:\n{error_feedback}"})
 
-        response = fast_chat_programmer(messages, temperature=0.1)
+        response = get_chatgpt_response(messages, temperature=0.1)
         return response
 
     def write_to_file(self, filepath, content):
@@ -276,7 +277,7 @@ class CodeGenerator:
         python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
         standard_lib_modules = set(stdlib_list(python_version))
         standard_lib_modules.update({"unittest", "mock"})
-        packages = requirements_content.splitlines()
+        packages = requirements_content.replace("```", "").splitlines()
         non_standard_packages = [
             pkg.split("==")[0] for pkg in packages if pkg.split("==")[0] not in standard_lib_modules
         ]
