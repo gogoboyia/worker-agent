@@ -3,7 +3,7 @@ import requests
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-def get_chatgpt_response(messages, max_retries=5, temperature=.5):
+def get_chatgpt_response(messages, max_retries=5, temperature=0.5):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -15,7 +15,8 @@ def get_chatgpt_response(messages, max_retries=5, temperature=.5):
     while retries < max_retries:
         payload = {
             "model": "gpt-4o",
-            "messages": messages
+            "messages": messages,
+            "temperature": temperature
         }
 
         response = requests.post(

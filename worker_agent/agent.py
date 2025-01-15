@@ -377,9 +377,8 @@ class CodeGenerator:
         self.prompt = f"prompt: {user_prompt}\nroadmap:\n{roadmap}"
         test_prompt = "Write unit tests for the generated code."
 
-        relevant_files = filter_relevant_files_recursive(user_prompt, self.workspace_dir)
+        files = filter_relevant_files_recursive(user_prompt, self.workspace_dir)
 
-        files = []
         error_feedback = None
 
         for iteration in range(1, self.max_iterations + 1):
@@ -395,7 +394,7 @@ class CodeGenerator:
             code = self.generate_code(
                 self.prompt,
                 role="programmer",
-                files=relevant_files,
+                files=files,
                 error_feedback=error_feedback,
             )
             code_blocks = extract_code(code)
