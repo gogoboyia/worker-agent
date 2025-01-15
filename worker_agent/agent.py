@@ -255,7 +255,7 @@ class CodeGenerator:
                 messages.append({"role": "user", "content": "Relevant project files:\n" + "".join(filtered_files_content)})
 
         if error_feedback:
-            messages.append({"role": "user", "content": f"Error:\n{error_feedback}"})
+            messages.insert(0, {"role": "user", "content": f"Resolve the error:\n{error_feedback}"})
 
         response = get_chatgpt_response(messages, temperature=0.1)
         return response

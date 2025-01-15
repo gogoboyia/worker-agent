@@ -44,6 +44,7 @@ PROGRAMMER_PROMPT = (
     "Avoid using `input(\"Press Enter to close the browser...\")` to pause execution. "
     "Do not generate example codes, always return functional code. "
     "When fixing a script do not generate a new `_fixed` file. "
+    "before and after interacting with an element wait a moment to allow the content to load. "
 )
 
 DIRECTORY_RELEVANCE_PROMPT = (
