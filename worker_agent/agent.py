@@ -6,7 +6,6 @@ import sys
 import asyncio
 from stdlib_list import stdlib_list
 
-from worker_agent.chatgpt import get_chatgpt_response
 from worker_agent.google import fast_chat_programmer
 from worker_agent.prompt_rules import CLARIFY_PROMPT, CODE_ACHIEVES_GOAL_PROMPT, DIRECTORY_RELEVANCE_PROMPT, FILE_RELEVANCE_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 from worker_agent.qwen import slow_local_chat_programmer
@@ -257,7 +256,7 @@ class CodeGenerator:
         if error_feedback:
             messages.insert(0, {"role": "user", "content": f"Resolve the error:\n{error_feedback}"})
 
-        response = get_chatgpt_response(messages, temperature=0.1)
+        response = fast_chat_programmer(messages, temperature=0.1)
         return response
 
     def write_to_file(self, filepath, content):
