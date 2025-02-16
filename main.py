@@ -24,7 +24,7 @@ def main():
         clarifier_agent=clarifier_agent,
     )
 
-    user_prompt = "Open YouTube Music in Chrome and play a funk playlist."
+    user_prompt = "Open YouTube Music in Chrome and play the music 'caneta azul'."
 
     # Define a handler for clarification responses, if desired
     async def my_clarification_handler(question):

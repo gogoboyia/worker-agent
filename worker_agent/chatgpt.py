@@ -14,7 +14,7 @@ def get_chatgpt_response(messages, max_retries=5, temperature=0.5):
 
     while retries < max_retries:
         payload = {
-            "model": "gpt-4o",
+            "model": "gpt-4o-mini",
             "messages": messages,
             "temperature": temperature
         }
