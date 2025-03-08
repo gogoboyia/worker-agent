@@ -6,7 +6,8 @@ import sys
 import asyncio
 from stdlib_list import stdlib_list
 
-from worker_agent.google import fast_chat_programmer
+from worker_agent.chatgpt import fast_chat_programmer
+from worker_agent.llm import fast_chat_programmer_qwen
 from worker_agent.prompt_rules import CLARIFY_PROMPT, CODE_ACHIEVES_GOAL_PROMPT, DIRECTORY_RELEVANCE_PROMPT, FILE_RELEVANCE_PROMPT, PROGRAMMER_PROMPT, REQUIREMENTS_PROMPT, ROADMAP_PROMPT, TESTER_PROMPT
 from worker_agent.qwen import slow_local_chat_programmer
 from worker_agent.utils.code_blocks import extract_code
@@ -111,7 +112,8 @@ class ClarifierAgent:
             if filtered_files_content:
                 messages.append({"role": "user", "content": "Relevant project files:\n" + "".join(filtered_files_content)})
 
-        response = fast_chat_programmer(messages, temperature=0.1)
+        from worker_agent.google import fast_chat_programmer as ff
+        response = ff(messages, temperature=0.1)
         return response.strip()
 
     def generate_roadmap(self, problem_description, relevant_files=None):

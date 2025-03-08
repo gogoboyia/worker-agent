@@ -3,7 +3,7 @@ from huggingface_hub import InferenceClient
 
 client = InferenceClient(timeout=60 * 5)
 
-def fast_chat_programmer(messages, temperature=0.2):
+def fast_chat_programmer_qwen(messages, temperature=0.2):
     response = client.chat.completions.create(
         model="Qwen/Qwen2.5-Coder-32B-Instruct",
         messages=messages,
